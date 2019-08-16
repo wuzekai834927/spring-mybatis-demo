@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wuzekai.dao.UserInfoMapper">
+
+    <resultMap id="UserInfoMap" type="com.wuzekai.pojo.MenuInfo">
+        <!--<id property="userid" column="userid"></id>-->
+        <!--<result property="account" column="account"></result>-->
+        <!--<result property="username" column="username"></result>-->
+        <!--<result property="password" column="password"></result>-->
+        <!--<result property="email" column="email"></result>-->
+        <!--<result property="mobile" column="mobile"></result>-->
+        <!--<result property="creacode" column="creacode"></result>-->
+        <!--<result property="status" column="status"></result>-->
+        <!--<result property="icon" column="icon"></result>-->
+        <!--<collection property="roleInfoList" ofType="com.wuzekai.pojo.RoleInfo">-->
+            <!--<id property="roleid" column="roleid"></id>-->
+            <!--<result property="rolename" column="rolename"></result>-->
+            <!--<result property="shortname" column="shortname"></result>-->
+        <!--</collection>-->
+        <id column="pid" property="mid"></id>
+        <result column="pname" property="menuName"></result>
+        <result column="picon" property="menuIcon"></result>
+        <result column="purl" property="menuUrl"></result>
+        <collection property="childMenus" ofType="com.wuzekai.pojo.MenuInfo">
+            <id property="mid" column="mid"></id>
+            <result property="menuName" column="menuname"></result>
+            <result property="menuIcon" column="menuicon"></result>
+            <result property="menuUrl" column="menu_url"></result>
+            <result property="parentId" column="parentid"></result>
+        </collection>
+
+    </resultMap>
+    <!--用户登录所需菜单信息-->
+    <select id="userLoginInit" resultMap="UserInfoMap" parameterType="com.wuzekai.pojo.UserInfo">
+        select m.mid pid,m.menuname pname,m.menuicon picon,m.menu_url purl,tb1.* from menuinfo m RIGHT JOIN
+        (select m.* from userinfo u,user_role ur,roleinfo r,role_menu rm,menuinfo m
+        where u.username = #{username} and u.`password` = #{password} and ur.userid = u.userid and r.roleid = ur.roleid
+        and rm.roleid = r.roleid and m.mid = rm.mid and status = 1 and parentid is not null order by mid) tb1
+        on m.mid = tb1.parentid
+    </select>
+    <!--查询所有-->
+    <select id="listAllUser" resultType="com.wuzekai.pojo.UserInfo" parameterType="com.wuzekai.dto.SearchUserInfoDTO">
+        select * from userinfo where status = 1
+        <if test="username !=null and username != ''">
+            and username  = #{username}
+        </if>
+        <if test="email != null and email != ''">
+            and email = #{email}
+        </if>
+    </select>
+    <!--删除-->
+    <update id="deleteUserById" parameterType="int">
+        update userinfo set status = 0 where userid = #{userid}
+    </update>
+    <!--登录-->
+    <select id="login" resultMap="UserInfoMap" parameterType="com.wuzekai.pojo.UserInfo">
+        select * from userinfo where username=#{username} and password = #{password}
+    </select>
+    <!--注册-->
+    <insert id="add" parameterType="com.wuzekai.pojo.UserInfo">
+        insert into userinfo (userid,account,username,password,email,mobile,areacode,status,icon) values
+        (default ,#{account},#{username},#{password},#{email},#{mobile},#{areacode},#{status},#{icon})
+    </insert>
+    <!--修改-->
+    <update id="updateUser" parameterType="com.wuzekai.pojo.UserInfo">
+
+        update userinfo set
+        <trim suffixOverrides=",">
+              <if test="username !=null and username!=''">
+                  username = #{username},
+              </if>
+            <if test="password !=null and password!=''">
+                password = #{password},
+            </if>
+            <if test="account !=null and account!=''">
+                account = #{account},
+            </if>
+            <if test="email !=null and email!=''">
+                email = #{email},
+            </if>
+            <if test="mobile !=null and mobile!=''">
+                mobile = #{mobile},
+            </if>
+            <if test="areacode !=null and areacode!=''">
+                areacode = #{areacode},
+            </if>
+            <if test="icon !=null and icon!=''">
+                icon = #{icon},
+            </if>
+        </trim>
+        where userid = #{userid}
+    </update>
+    <!--通过ID查询一个用户-->
+    <select id="selectOneById" parameterType="int" resultType="com.wuzekai.pojo.UserInfo">
+        select * from userinfo where status = 1 and userid = #{userid}
+    </select>
+
+</mapper>

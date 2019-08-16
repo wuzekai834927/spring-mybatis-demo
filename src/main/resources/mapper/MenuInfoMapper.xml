@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wuzekai.dao.MenuInfoMapper">
+
+   <resultMap id="MenuInfoMap" type="com.wuzekai.pojo.MenuInfo">
+        <id property="mid" column="mid"></id>
+        <result property="menuName" column="menuname"></result>
+        <result property="menuIcon" column="menuicon"></result>
+        <result property="menuUrl" column="menu_url"></result>
+        <result property="parentId" column="parentid"></result>
+        <collection property="roleInfoList" ofType="com.wuzekai.pojo.RoleInfo">
+            <id property="roleid" column="roleid"></id>
+            <result property="rolename" column="rolename"></result>
+            <result property="shortname" column="shortname"></result>
+        </collection>
+
+
+        <collection property="childMenus" ofType="com.wuzekai.pojo.MenuInfo">
+            <id property="mid" column="cmid"></id>
+            <result property="menuName" column="cname"></result>
+            <result property="menuIcon" column="cicon"></result>
+            <result property="menuUrl" column="curl"></result>
+            <result property="parentId" column="cpid"></result>
+
+        </collection>
+
+    </resultMap>
+
+    <resultMap id="menuInfoVoMap" type="com.wuzekai.vo.MenuInfoVO">
+        <id column="id" property="id"></id>
+        <result column="name" property="name"></result>
+        <result column="pid" property="pid"></result>
+        <collection property="children" ofType="com.wuzekai.vo.MenuInfoVO">
+            <id column="cid" property="id"></id>
+            <result column="cname" property="name"></result>
+            <result column="menu_url" property="url"></result>
+            <result column="cpid" property="pid"></result>
+            <result column="checked" property="checked"></result>
+        </collection>
+
+    </resultMap>
+
+    <select id="getMenu" resultMap="MenuInfoMap">
+        select m1.*, m2.mid cmid , m2.menuname cname, m2.menuicon cicon , m2.menu_url curl, m2.parentid cpid
+        from menuinfo m1 , menuinfo m2 where m1.mid = m2.parentid and m1.parentid is null
+    </select>
+<!--assignPermission.html 的修改-->
+    <select id="listMenuByRoleId" resultMap="menuInfoVoMap" parameterType="int">
+        <!-- 未被选择集合-->
+        select m2.mid id,m2.menuname name,m2.parentid pid,m1.mid cid,m1.menuname cname,m1.parentid cpid,m1.menu_url,'0' checked from menuinfo m1,menuinfo m2 where m1.mid  not in
+        (select mid from role_menu rm where roleid = #{roleId}) and m1.parentid = m2.mid
+        union
+        <!-- 被选择集合-->
+        select m2.mid id,m2.menuname name,m2.parentid pid,m1.mid cid,m1.menuname cname,m1.parentid cpid,m1.menu_url,'1' checked from menuinfo m1,menuinfo m2 where m1.mid  in
+        (select mid from role_menu rm where roleid = #{roleId}) and m1.parentid = m2.mid
+    </select>
+
+    <delete id="removeRoleMenuByMenuId" parameterType="com.wuzekai.dto.ModifyRoleMenuDTO">
+            delete from role_menu where roleid = #{roleId}
+            <if test="menuIds != null and menuIds.size() != 0">
+            and mid not in(
+            <foreach collection="menuIds" item="menuid" separator=",">
+                #{menuid}
+            </foreach>
+            )
+            </if>
+    </delete>
+    
+    <select id="listRoleMenuByRoleId" parameterType="com.wuzekai.dto.ModifyRoleMenuDTO" resultType="com.wuzekai.pojo.RoleMenu">
+        select *  from role_menu where roleid = #{roleId}
+    </select>
+    
+    <insert id="addRoleMenuByRoleId" parameterType="com.wuzekai.dto.ModifyRoleMenuDTO">
+        <if test="menuIds != null and menuIds.size() != 0"></if>
+              insert into role_menu(rmid,roleid,mid) values
+            <foreach collection="menuIds" item="menuid" separator=",">
+                 (default ,#{roleId} , #{menuid})
+            </foreach>
+    </insert>
+
+    <select id="listAllMenu" resultType="com.wuzekai.vo.MenuListVO">
+            select *,isnull(parentid) parentMenu from menuinfo
+    </select>
+</mapper>
