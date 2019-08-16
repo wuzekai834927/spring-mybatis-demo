@@ -27,3 +27,4 @@ public interface UserInfoMapper {
     //查询一个用户
     public UserInfo selectOneById(int id);
 }
+//aaaaaaaaaaa
